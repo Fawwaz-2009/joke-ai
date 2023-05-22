@@ -27,7 +27,7 @@ export const fireGptStream = (params: Params, onData: SetData, onError: SetData,
         const data = JSON.parse(ev.data);
         const deltaContent = data?.choices?.[0]?.delta?.content;
         onData(deltaContent);
-      } catch (error) {
+      } catch (error:any) {
         console.log({ error });
         onError(error.message);
         setIsGenerating(false);
@@ -39,7 +39,7 @@ export const fireGptStream = (params: Params, onData: SetData, onError: SetData,
       console.log({ error, response: error.response });
       if (error.response?.status) {
         console.error(error.response.status, error.message);
-        error.response.data.on("data", (data: string) => {
+        (error.response as any).data.on("data", (data: string) => {
           const message = data.toString();
           try {
             const parsed = JSON.parse(message);
