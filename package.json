@@ -9,9 +9,11 @@
     "typecheck": "tsc"
   },
   "dependencies": {
+    "@microsoft/fetch-event-source": "^2.0.1",
     "@radix-ui/react-dialog": "^1.0.3",
     "@radix-ui/react-label": "^2.0.1",
     "@radix-ui/react-popover": "^1.0.5",
+    "@radix-ui/react-scroll-area": "^1.0.3",
     "@radix-ui/react-slot": "^1.0.1",
     "@remix-run/css-bundle": "^1.16.1",
     "@remix-run/node": "^1.16.1",
