@@ -1,4 +1,6 @@
 import type { LoaderArgs } from "@remix-run/node";
+import { ChatPromptTemplate, HumanMessagePromptTemplate, SystemMessagePromptTemplate } from "langchain/prompts";
+import { streamOpenAiChatResponse } from "~/lib/streamOpenAiChatResponse";
 
 export const loader = async ({ request }: LoaderArgs) => {
   const ulrSearchParams = new URL(request.url).searchParams;
@@ -18,34 +20,26 @@ export const loader = async ({ request }: LoaderArgs) => {
     console.log("No topic provided");
     return new Response("No topic provided", { status: 400 });
   }
-  console.log({
+
+  const chatPrompt = await ChatPromptTemplate.fromPromptMessages([
+    SystemMessagePromptTemplate.fromTemplate(
+      "You are a witty AI assistant trained to generate jokes in the style of {comedian}. Your response should only contain what would {comedian} say."
+    ),
+    HumanMessagePromptTemplate.fromTemplate(`Tell me some jokes about ${topic}.`),
+  ]);
+
+  const readableStream = streamOpenAiChatResponse({
     apiKey,
-    comedian,
-    topic,
+    chatPrompt: chatPrompt,
+    templateValues: { comedian, topic },
+    signal: request.signal, // Pass the controller to the function
   });
-  console.log(comedian);
-  const payload = {
-    messages: [
-      {
-        role: "system",
-        content: `You are a witty AI assistant trained to generate jokes in the style of ${comedian}. Your response should only contain what would ${comedian} say.`,
-      },
-      { role: "user", content: `Tell me some jokes about ${topic}.` },
-    ],
-    model: "gpt-3.5-turbo",
-    stream: true,
-    temperature: 0.7,
-  };
-  const url = "https://api.openai.com/v1/chat/completions";
-  return fetch(url, {
-    method: "POST",
+
+  return new Response(readableStream, {
     headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
     },
-    body: JSON.stringify(payload),
-  }).catch((error) => {
-    console.log({ error });
-    throw error;
+    status: 200,
   });
 };

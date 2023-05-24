@@ -13,7 +13,7 @@ import { fireGptStream } from "~/lib/fireGptStream";
 import { useAbortableFetch } from "~/hooks/useAbortableFetch";
 
 export const meta: V2_MetaFunction = () => {
-  return [{ title: "New Remix App" }];
+  return [{ title: "Joke-AI" }];
 };
 
 export default function Index() {
@@ -44,6 +44,7 @@ export default function Index() {
               const formData = new FormData(event.currentTarget);
               const jokeTopic = formData.get("joke-topic") as string;
               setJoke(null);
+              setError(null);
 
               fetchData((abort) =>
                 fireGptStream(
@@ -53,14 +54,12 @@ export default function Index() {
                     apiKey: openAiAPIKey,
                   },
                   (data) => {
-                    console.log({ joke, data, res: joke ? joke + data : data });
                     setJoke((joke) => {
                       if (!data) return joke;
                       return joke ? joke + data : data;
                     });
                   },
                   (error) => {
-                    console.log(error);
                     setError(error);
                   },
                   setIsGenerating,
@@ -99,6 +98,7 @@ export default function Index() {
                 </Button>
               )}
             </div>
+            {error && <p className="text-red-500 text-center">{error}</p>}
           </form>
         </div>
       ) : (

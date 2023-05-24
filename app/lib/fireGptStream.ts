@@ -18,42 +18,33 @@ export const fireGptStream = (params: Params, onData: SetData, onError: SetData,
   fetchEventSource(`/api/gpt-stream?${queryString}`, {
     signal: abortController.signal,
     onmessage(ev) {
-      if (ev.data === "[DONE]") {
+      if (ev.event === "END") {
         abortController.abort();
         setIsGenerating(false);
         return;
       }
+      if (ev.event === "ERROR") {
+        abortController.abort();
+        setIsGenerating(false);
+        onError(ev.data);
+        return;
+      }
       try {
-        const data = JSON.parse(ev.data);
-        const deltaContent = data?.choices?.[0]?.delta?.content;
-        onData(deltaContent);
-      } catch (error:any) {
-        console.log({ error });
+        onData(ev.data);
+      } catch (error: any) {
         onError(error.message);
         setIsGenerating(false);
       }
     },
-    onerror(error: Error & { response?: Response }) {
+    onerror(error: unknown) {
+      setIsGenerating(false);
+      onError("An error occurred during your request");
+
+      throw error;
+    },
+    onclose() {
       setIsGenerating(false);
       abortController.abort(); // add this line to stop reconnection attempts
-      console.log({ error, response: error.response });
-      if (error.response?.status) {
-        console.error(error.response.status, error.message);
-        (error.response as any).data.on("data", (data: string) => {
-          const message = data.toString();
-          try {
-            const parsed = JSON.parse(message);
-            console.error("An error occurred during OpenAI request: ", parsed);
-            onError(parsed);
-          } catch (error) {
-            console.error("An error occurred during OpenAI request: ", message);
-            onError(message);
-          }
-        });
-      } else {
-        console.error("An error occurred during OpenAI request", error);
-        onError(error.message);
-      }
     },
   });
 };
